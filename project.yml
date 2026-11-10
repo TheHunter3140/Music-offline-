@@ -1,0 +1,69 @@
+name: MediaBox
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  MediaBox:
+    type: application
+    platform: iOS
+    sources:
+      - path: MediaBox
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: MediaBox
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes:
+          - audio
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.local.mediabox.reindex
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Média
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.audio
+              - public.movie
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoadsInWebContent: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.mediabox
+        PRODUCT_NAME: MediaBox
+        ENABLE_TESTABILITY: YES
+  MediaBoxTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: MediaBox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.mediabox.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  MediaBox:
+    build:
+      targets:
+        MediaBox: all
+    test:
+      targets:
+        - MediaBoxTests
