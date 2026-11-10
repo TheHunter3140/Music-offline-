@@ -1,0 +1,75 @@
+name: Build MediaBox (IPA non signé)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Choisir Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Installer XcodeGen
+        run: brew install xcodegen
+
+      - name: Générer le projet
+        run: xcodegen generate
+
+      - name: Compiler (Release, sans signature)
+        run: |
+          set -o pipefail
+          xcodebuild -project MediaBox.xcodeproj -scheme MediaBox \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee build.log | tail -n 80
+
+      - name: Créer l'IPA non signé
+        run: |
+          APP=$(find build/Build/Products -name "MediaBox.app" -maxdepth 3 | head -n 1)
+          echo "App trouvée : $APP"
+          rm -rf Payload && mkdir Payload && cp -R "$APP" Payload/
+          zip -qry MediaBox-unsigned.ipa Payload
+          ls -lh MediaBox-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MediaBox-unsigned-ipa
+          path: MediaBox-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: build.log
+
+  tests:
+    # Tests unitaires sur simulateur : n'empêche pas la livraison de l'IPA si indisponible.
+    runs-on: macos-15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Tests (simulateur)
+        run: |
+          set -o pipefail
+          xcodebuild test -project MediaBox.xcodeproj -scheme MediaBox \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO | tee test.log | tail -n 80
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-log
+          path: test.log
